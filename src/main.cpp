@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 #include <list>
-#include <time.h>
+#include <chrono>
 using namespace std;
 
 list<int> idx_char;
@@ -17,8 +17,81 @@ string result;
 vector<string> operand;
 bool selesai = false;
 
+// fungsi untuk merubah string s, baik operan atau hasil menjadi angka
+int stringToNumber(string s);
+
+// fungsi untuk menghitung dari hasil tebakan. Menghasilkan true jika
+// hasil evaluasi tebakan memenuhi cryptarithmatic
+bool evaluasi();
+
+// prosedur untuk menulis hasil cryptarithmatic
+void writeResult();
+
+// prosedur rekursif untuk melakukan bruteforce
+void checkAll(int offset, int k);
+
+// program utama
+int main(){
+  string s;
+  int i;
+
+  // membaca masukan cryptarithmatic bagian operan-operan
+  do{
+    getline(cin, s);
+    i = 0;
+    while( i < ( (s[s.length()-1]!='+')? s.length() : s.length()-1)){
+      idx_char.push_back( (int) s[i]-'A');
+      angka[(int) s[i]-'A'] = i; // inisialisasi
+      i++;
+    }
+    operand.push_back(s);
+  }while(s[s.length()-1]!='+');
+  operand.back() = operand.back().substr(0, operand.back().length()-1);
+  getline(cin, s);
+  getline(cin, result);
+
+  // membaca masukan cryptarithmatic bagian hasil penjumlahan
+  i = 0;
+  while(i<result.length()){
+    idx_char.push_back( (int) result[i]-'A');
+    angka[(int) s[i]-'A'] = i; // inisialisasi
+    i++;
+  }
+
+  // mendata kemunculan huruf, namun meletekan awal huruf pada hasil penjumlahan pertama kali
+  auto t_start = std::chrono::high_resolution_clock::now();
+  idx_char.sort();
+  idx_char.unique();
+  for (list<int>::iterator it = idx_char.begin(); it != idx_char.end(); ++it){
+    if(*it == result[0]-'A')
+        idx_char_v.insert(idx_char_v.begin(),*it);
+    else
+      idx_char_v.push_back(*it);
+  }
+
+  if(idx_char_v.size()>10){
+    cout << "Tidak ada solusi" << endl;
+  }else{
+    // memulai bruteforce dengan fungsi rekursif, menampilkan hasilnya, serta menghitung waktunya
+    checkAll(0,idx_char.size());
+    if(!selesai)
+      cout << "Tidak ada solusi" << endl;
+    auto t_end = std::chrono::high_resolution_clock::now();
+    cout  << endl
+          << endl
+          << "waktu: "
+          << std::chrono::duration<double, std::milli>(t_end-t_start).count()
+          << " ms"
+          << endl;
+  }
+
+  return 0;
+}
+
 int stringToNumber(string s){
-  int hasil = 0,i;
+  int hasil, i;
+
+  hasil = 0;
   for(i = 0; i < s.length() ; i++){
     hasil = (hasil*10) + angka[(int) s[i]-'A'];
   }
@@ -26,44 +99,54 @@ int stringToNumber(string s){
 }
 
 bool evaluasi(){
-  int hasil = stringToNumber(result);
+  int hasil, temp, i;
+  bool fail;
+
+  hasil = stringToNumber(result); temp = 0; i = 0;
+  fail = false;
+
   if(angka[(int)result[0]-'A'] == 0)
     return false;
-  int temp = 0;
-  for (vector<string>::iterator it = operand.begin() ; it != operand.end(); ++it){
-    if(angka[(int) (*it)[0]-'A'] == 0)
-      return false;
-    int x = stringToNumber(*it);
-    temp = temp + x;
+
+  while(i < operand.size() && !fail){
+    if(angka[operand[i][0]-'A'] == 0){
+      fail = true;
+    }else{
+      temp = temp + stringToNumber(operand[i]);
+      i++;
+    }
   }
-  return (temp == hasil);
+
+  if(fail)
+    return false;
+  else
+    return (temp == hasil);
 }
 
 void writeResult(){
-  int i = 0;
-  for (vector<string>::iterator it = operand.begin() ; it != operand.end(); ++it){
+  int i;
+
+  i = 0;
+  while(i < operand.size()-1){
+    cout << operand[i] << endl;
     i++;
-    if( i == operand.size())
-      cout << *it << "+" << endl;
-    else
-      cout << *it << endl;
   }
+  cout << operand[i] << "+" << endl;
+
   cout << "--------" << endl;
   cout << result<< endl << endl;
 
   // menulis hasil
-  for (vector<string>::iterator it = operand.begin() ; it != operand.end(); ++it){
-    i--;
-    if( i == 0)
-      cout << stringToNumber(*it) <<  "+" << endl;
-    else
-      cout << stringToNumber(*it) << endl;
+  i = 0;
+  while(i < operand.size()-1){
+    cout << stringToNumber(operand[i]) << endl;
+    i++;
   }
+  cout << stringToNumber(operand[i]) << "+" << endl;
   cout << "--------" << endl;
   cout << stringToNumber(result)<< endl;
 
 }
-
 
 void checkAll(int offset, int k){
   bool found; int j;
@@ -110,53 +193,4 @@ void checkAll(int offset, int k){
     }
 
   }
-}
-
-
-
-int main(){
-  string s; int i;
-
-  // membaca masukan cryptarithmatic bagian operan-operan
-  do{
-    getline(cin, s);
-    i = 0;
-    while( i < ( (s[s.length()-1]!='+')? s.length() : s.length()-1)){
-      idx_char.push_back( (int) s[i]-'A');
-      angka[(int) s[i]-'A'] = i; // inisialisasi
-      i++;
-    }
-    operand.push_back(s);
-  }while(s[s.length()-1]!='+');
-  operand.back() = operand.back().substr(0, operand.back().length()-1);
-  getline(cin, s);
-  getline(cin, result);
-
-  // membaca masukan cryptarithmatic bagian hasil penjumlahan
-  i = 0;
-  while(i<result.length()){
-    idx_char.push_back( (int) result[i]-'A');
-    angka[(int) s[i]-'A'] = i; // inisialisasi
-    i++;
-  }
-
-  // mendata kemunculan huruf, namun meletekan awal huruf pada hasil penjumlahan pertama kali
-  idx_char.sort();
-  idx_char.unique();
-  for (list<int>::iterator it = idx_char.begin(); it != idx_char.end(); ++it){
-    if(*it == result[0]-'A')
-        idx_char_v.insert(idx_char_v.begin(),*it);
-    else
-      idx_char_v.push_back(*it);
-  }
-
-  // memulai bruteforce dengan fungsi rekursif, menampilkan hasilnya, serta menghitung waktunya
-  int awal = clock();
-  checkAll(0,idx_char.size());
-  int akhir = clock();
-  if(!selesai)
-    cout << "Tidak ada solusi" << endl;
-  cout << endl << endl << "waktu: "<< (double)(akhir-awal/(CLOCKS_PER_SEC/1000)) << " ms" << endl;
-
-  return 0;
 }
